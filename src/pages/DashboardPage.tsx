@@ -5,32 +5,27 @@ import {
     User,
     GraduationCap,
     Gift,
-    // ArrowRight,
     MessageCircle,
-    // Mail,
     Phone,
-    Loader2, Users,
+    Loader2,
+    Users,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { apiService } from '../services/api.service';
 import type { Student, Surprise } from '../types';
-import { mockStudents, mockSurprises } from '../services/mock.data';
 
 export const DashboardPage: React.FC = () => {
-    let { user } = useAuth();
-    // let user= mockStudents[2];
-    useNavigate();
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [mentor, setMentor] = useState<Student | null>(null);
     const [mentees, setMentees] = useState<Student[]>([]);
     const [surprises, setSurprises] = useState<Surprise[]>([]);
 
-    const isMentor = user?.niveau && parseInt(user.niveau) > 1;
+    const isMentor = user?.niveau && parseInt(user.niveau) >= 4;
 
     useEffect(() => {
-        setMentor(mockStudents[0]);
-        setSurprises(mockSurprises)
         loadDashboardData();
     }, []);
 
@@ -71,23 +66,35 @@ export const DashboardPage: React.FC = () => {
     return (
         <div className="space-y-8">
             {/* Welcome Section */}
-            <div className="  ">
+            <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl p-6 sm:p-8">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-3xl font-heading text-dark font-bold mb-2">
+                        <h1 className="text-3xl font-heading font-bold mb-2">
                             Bienvenue, {user?.nom_complet} !
                         </h1>
-                        <p className="text-primary-light/80 text-lg">
+                        <p className="text-white/90 text-lg">
                             {isMentor
                                 ? 'Vous accompagnez des étudiants dans leur parcours académique'
                                 : 'Votre parrain est là pour vous guider'}
                         </p>
+                        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4" />
+                                <span>{user?.filiere} - Niveau {user?.niveau}</span>
+                            </div>
+                            {user?.telephone && (
+                                <div className="flex items-center gap-2">
+                                    <Phone className="w-4 h-4" />
+                                    <span>{user.telephone}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     {user?.photo_profil && (
                         <img
                             src={user.photo_profil}
                             alt="Photo de profil"
-                            className="w-20 h-20 rounded-full border-4 border-white shadow-lg"
+                            className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
                         />
                     )}
                 </div>
@@ -95,7 +102,7 @@ export const DashboardPage: React.FC = () => {
 
             {/* Content based on role */}
             {isMentor ? (
-                <MentorContent mentees={mentees} />
+                <MentorContent mentees={mentees} navigate={navigate} />
             ) : (
                 <MenteeContent mentor={mentor} surprises={surprises} />
             )}
@@ -104,9 +111,7 @@ export const DashboardPage: React.FC = () => {
 };
 
 // Composant pour les mentors
-const MentorContent: React.FC<{ mentees: Student[] }> = ({ mentees }) => {
-    const navigate = useNavigate();
-
+const MentorContent: React.FC<{ mentees: Student[]; navigate: any }> = ({ mentees, navigate }) => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -161,8 +166,8 @@ const MentorContent: React.FC<{ mentees: Student[] }> = ({ mentees }) => {
                                                         key={idx}
                                                         className="px-2 py-1 bg-secondary/20 text-primary text-xs rounded-full"
                                                     >
-                            {interest}
-                          </span>
+                                                        {interest}
+                                                    </span>
                                                 ))}
                                             </div>
                                         </div>
@@ -259,8 +264,8 @@ const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[] }>
                                                     key={idx}
                                                     className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full"
                                                 >
-                          {comp}
-                        </span>
+                                                    {comp}
+                                                </span>
                                             ))}
                                         </div>
                                     </div>
@@ -304,10 +309,10 @@ const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[] }>
                                 {surprises.slice(0, 5).map((surprise) => (
                                     <div
                                         key={surprise.id}
-                                        className="p-3 "
+                                        className="p-3 bg-gradient-to-r from-secondary/10 to-primary/5 rounded-lg"
                                     >
-                                        <p className="font-bold text-primary text-md mb-1">{surprise.titre}</p>
-                                        <p className="text-sm text-neutral-600 line-clamp-10">{surprise.contenu}</p>
+                                        <p className="font-bold text-primary text-sm mb-1">{surprise.titre}</p>
+                                        <p className="text-sm text-neutral-600 line-clamp-3">{surprise.contenu}</p>
                                     </div>
                                 ))}
                             </div>

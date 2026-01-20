@@ -1,4 +1,4 @@
-import React, {type JSX, useEffect, useState} from 'react';
+import React, { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -24,7 +24,7 @@ export const SurprisesPage: React.FC = () => {
     const [surprises, setSurprises] = useState<Surprise[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const isMentor = user?.niveau && parseInt(user.niveau) > 1;
+    const isMentor = user?.niveau && parseInt(user.niveau) >= 4;
 
     useEffect(() => {
         loadSurprises();
@@ -45,16 +45,17 @@ export const SurprisesPage: React.FC = () => {
     };
 
     const getMediaIcon = (type: string) => {
-        switch (type) {
-            case 'text':
+        const upperType = type.toUpperCase();
+        switch (upperType) {
+            case 'TEXTE':
                 return <FileText className="w-5 h-5" />;
-            case 'image':
+            case 'IMAGE':
                 return <ImageIcon className="w-5 h-5" />;
-            case 'video':
+            case 'VIDEO':
                 return <Video className="w-5 h-5" />;
-            case 'audio':
+            case 'AUDIO':
                 return <Music className="w-5 h-5" />;
-            case 'link':
+            case 'LIEN':
                 return <LinkIcon className="w-5 h-5" />;
             default:
                 return <Gift className="w-5 h-5" />;
@@ -62,16 +63,17 @@ export const SurprisesPage: React.FC = () => {
     };
 
     const getMediaColor = (type: string) => {
-        switch (type) {
-            case 'text':
+        const upperType = type.toUpperCase();
+        switch (upperType) {
+            case 'TEXTE':
                 return 'bg-blue-100 text-blue-600';
-            case 'image':
+            case 'IMAGE':
                 return 'bg-purple-100 text-purple-600';
-            case 'video':
+            case 'VIDEO':
                 return 'bg-red-100 text-red-600';
-            case 'audio':
+            case 'AUDIO':
                 return 'bg-green-100 text-green-600';
-            case 'link':
+            case 'LIEN':
                 return 'bg-yellow-100 text-yellow-600';
             default:
                 return 'bg-neutral-100 text-neutral-600';
@@ -130,8 +132,8 @@ export const SurprisesPage: React.FC = () => {
             {/* Statistiques pour mentor */}
             {isMentor && surprises.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {['text', 'image', 'video', 'link'].map((type) => {
-                        const count = surprises.filter((s) => s.type_media === type).length;
+                    {['TEXTE', 'IMAGE', 'VIDEO', 'LIEN'].map((type) => {
+                        const count = surprises.filter((s) => s.type_media.toUpperCase() === type).length;
                         return (
                             <Card key={type}>
                                 <CardContent className="pt-6">
@@ -144,7 +146,7 @@ export const SurprisesPage: React.FC = () => {
                                             {getMediaIcon(type)}
                                         </div>
                                         <p className="text-2xl font-heading font-bold text-primary">{count}</p>
-                                        <p className="text-xs text-neutral-600 capitalize">{type}</p>
+                                        <p className="text-xs text-neutral-600 capitalize">{type.toLowerCase()}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -207,11 +209,13 @@ const SurpriseCard: React.FC<{
     return (
         <Card hover className="overflow-hidden">
             <div className="relative">
-                <div className="absolute top-4 right-4">
-                    <div className={`${getMediaColor(surprise.type_media)} px-3 py-1 rounded-full`}>
+                <div className="absolute top-4 right-4 z-10">
+                    <div className={`${getMediaColor(surprise.type_media)} px-3 py-1 rounded-full shadow-sm`}>
                         <div className="flex items-center gap-1.5">
                             {getMediaIcon(surprise.type_media)}
-                            <span className="text-xs font-medium capitalize">{surprise.type_media}</span>
+                            <span className="text-xs font-medium capitalize">
+                                {surprise.type_media.toLowerCase()}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -231,21 +235,24 @@ const SurpriseCard: React.FC<{
             <CardContent>
                 {/* Contenu de la surprise */}
                 <div className="mb-4">
-                    {surprise.type_media === 'image' && surprise.contenu.startsWith('http') ? (
+                    {surprise.type_media.toUpperCase() === 'IMAGE' && surprise.contenu.startsWith('http') ? (
                         <img
                             src={surprise.contenu}
                             alt={surprise.titre}
                             className="w-full h-48 object-cover rounded-lg mb-3"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                            }}
                         />
-                    ) : surprise.type_media === 'video' && surprise.contenu.startsWith('http') ? (
+                    ) : surprise.type_media.toUpperCase() === 'VIDEO' && surprise.contenu.startsWith('http') ? (
                         <video
                             src={surprise.contenu}
                             controls
                             className="w-full h-48 rounded-lg mb-3"
                         />
-                    ) : surprise.type_media === 'audio' && surprise.contenu.startsWith('http') ? (
+                    ) : surprise.type_media.toUpperCase() === 'AUDIO' && surprise.contenu.startsWith('http') ? (
                         <audio src={surprise.contenu} controls className="w-full mb-3" />
-                    ) : surprise.type_media === 'link' ? (
+                    ) : surprise.type_media.toUpperCase() === 'LIEN' ? (
                         <a
                             href={surprise.contenu}
                             target="_blank"
@@ -255,8 +262,8 @@ const SurpriseCard: React.FC<{
                             <div className="flex items-center gap-3">
                                 <LinkIcon className="w-5 h-5 text-primary" />
                                 <span className="text-primary font-medium truncate">
-                  {surprise.contenu}
-                </span>
+                                    {surprise.contenu}
+                                </span>
                             </div>
                         </a>
                     ) : (

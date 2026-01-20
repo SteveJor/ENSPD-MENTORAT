@@ -3,51 +3,42 @@ export const APP_CONFIG = {
     name: 'ENSPD Mentorat',
     version: '1.0.0',
     description: 'Plateforme de parrainage académique ENSPD',
-    useMockApi: true, // 🎯 ACTIVER/DÉSACTIVER LE MODE MOCK
+    useMockApi: false, // ✅ DÉSACTIVER LE MODE MOCK pour utiliser la vraie API
 };
 
-// URLs de l'API
-// const getApiBaseUrl = () => {
-//     // En production (Vercel), utiliser la variable d'environnement
-//     if (import.meta.env.PROD) {
-//         return import.meta.env.VITE_API_BASE_URL || '/api';
-//     }
-//
-//     // En développement
-//     // Si vous testez depuis mobile, utilisez l'IP de votre PC
-//     // Exemple: http://192.168.1.100:8000/api
-//     return ;
-// };
-
 export const API_CONFIG = {
-    baseURL: 'https://parrainsgit.onrender.com/api',
+    baseURL: 'https://parrainsgit.onrender.com/api', // ✅ Votre URL backend
     timeout: 10000,
 };
 
-// Endpoints API
+// ✅ Endpoints corrigés pour correspondre au backend Flask
 export const API_ENDPOINTS = {
     auth: {
-        login: '/auth/login',
-        verify: '/auth/verify',
+        login: '/auth/login', // ✅ POST /api/auth/login
+        refresh: '/auth/refresh', // ✅ POST /api/auth/refresh
     },
     students: {
-        profile: '/students/profile',
-        updateProfile: '/students/update',
+        me: '/student/me', // ✅ GET /api/student/me
+        list: '/student/', // ✅ GET /api/student/
+        update: (id: number) => `/student/${id}`, // ✅ PUT /api/student/:id
+        delete: (id: number) => `/student/${id}`, // ✅ DELETE /api/student/:id
     },
     mentors: {
-        assignments: '/mentors/assignments',
-        mentees: '/mentors/mentees',
+        dashboard: '/mentor/dashboard', // ✅ GET /api/mentor/dashboard
+        mentees: '/mentor/filleuls', // ✅ GET /api/mentor/filleuls
     },
     surprises: {
-        create: '/surprises/create',
-        list: '/surprises/list',
-        byMentor: '/surprises/mentor',
+        create: '/surprises/', // ✅ POST /api/surprises/
+        list: '/surprises/', // ✅ GET /api/surprises/
+        update: (id: number) => `/surprises/${id}`, // ✅ PUT /api/surprises/:id
+        delete: (id: number) => `/surprises/${id}`, // ✅ DELETE /api/surprises/:id
     },
 };
 
+// ... (reste du fichier inchangé)
 // Assets
 export const ASSETS = {
-    logo: '/logo/enspd_mentorat_logo.jpg',
+    logo: '/logo/enspd_mentorat_logo.png',
     defaultAvatar: '/images/default-avatar.png',
     placeholders: {
         profile: '/images/placeholder-profile.svg',

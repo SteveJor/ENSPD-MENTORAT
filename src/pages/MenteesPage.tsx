@@ -4,21 +4,17 @@ import {
     User,
     Users,
     MessageCircle,
-    // Mail,
     Phone,
     Award,
     Heart,
     Search,
-    // Filter,
     Loader2,
-    // ChevronRight,
 } from 'lucide-react';
-import { Card, CardContent,  } from '../components/ui/Card';
+import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { apiService } from '../services/api.service';
 import type { Student } from '../types';
-import { mockStudents } from '../services/mock.data';
 
 export const MenteesPage: React.FC = () => {
     const navigate = useNavigate();
@@ -28,9 +24,6 @@ export const MenteesPage: React.FC = () => {
     const [selectedFiliere, setSelectedFiliere] = useState<string>('all');
 
     useEffect(() => {
-            // Charger les mentorés mockés directement
-            setMentees(mockStudents); // simple et efficace
-            setLoading(false);
         loadMentees();
     }, []);
 
@@ -91,9 +84,10 @@ export const MenteesPage: React.FC = () => {
                     Créer une surprise
                 </Button>
             </div>
+
             {/* Filtres et recherche */}
             <Card>
-                <CardContent className="pt-2">
+                <CardContent className="pt-6">
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
                             <Input
@@ -109,14 +103,14 @@ export const MenteesPage: React.FC = () => {
                                     key={filiere}
                                     onClick={() => setSelectedFiliere(filiere)}
                                     className={`
-                    px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
-                    transition-all duration-200
-                    ${
+                                        px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
+                                        transition-all duration-200
+                                        ${
                                         selectedFiliere === filiere
                                             ? 'bg-primary text-white'
                                             : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                                     }
-                  `}
+                                    `}
                                 >
                                     {filiere === 'all' ? 'Toutes' : filiere}
                                 </button>
@@ -174,8 +168,8 @@ const MenteeCard: React.FC<{ mentee: Student }> = ({ mentee }) => {
                     <div className="flex items-center gap-2 text-sm text-neutral-600">
                         <Award className="w-4 h-4" />
                         <span>
-              {mentee.filiere} - Niveau {mentee.niveau}
-            </span>
+                            {mentee.filiere} - Niveau {mentee.niveau}
+                        </span>
                     </div>
                 </div>
 
@@ -210,13 +204,13 @@ const MenteeCard: React.FC<{ mentee: Student }> = ({ mentee }) => {
                                     key={idx}
                                     className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
                                 >
-                  {comp}
-                </span>
+                                    {comp}
+                                </span>
                             ))}
                             {mentee.competences.length > 3 && (
                                 <span className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full">
-                  +{mentee.competences.length - 3}
-                </span>
+                                    +{mentee.competences.length - 3}
+                                </span>
                             )}
                         </div>
                     </div>
@@ -235,13 +229,13 @@ const MenteeCard: React.FC<{ mentee: Student }> = ({ mentee }) => {
                                     key={idx}
                                     className="px-2 py-1 bg-secondary/20 text-primary text-xs rounded-full"
                                 >
-                  {interet}
-                </span>
+                                    {interet}
+                                </span>
                             ))}
                             {mentee.centres_interet.length > 3 && (
                                 <span className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full">
-                  +{mentee.centres_interet.length - 3}
-                </span>
+                                    +{mentee.centres_interet.length - 3}
+                                </span>
                             )}
                         </div>
                     </div>

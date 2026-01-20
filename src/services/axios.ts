@@ -22,20 +22,41 @@ api.interceptors.request.use((config) => {
 
 /* =====================
    RESPONSE INTERCEPTOR
+   ✅ Transforme les réponses Flask en format standardisé
 ===================== */
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // ✅ Transformer la réponse Flask en format attendu par le frontend
+        const data = response.data;
+
+        // Si la réponse contient déjà "success", on la retourne telle quelle
+        if ('success' in data) {
+            return response;
+        }
+
+        // ✅ Transformer les réponses Flask standard
+        return {
+            ...response,
+            data: {
+                success: true,
+                data: data.student || data.surprise || data.mentor || data,
+                message: data.msg || data.message,
+            },
+        };
+    },
     (error) => {
         const status = error.response?.status;
+        const errorMessage = error.response?.data?.msg || error.response?.data?.message;
 
         if (status === 401) {
             localStorage.removeItem('auth_token');
+            window.location.href = '/login';
         }
 
         return Promise.reject({
             success: false,
             status,
-            error: mapHttpError(status),
+            error: errorMessage || mapHttpError(status),
         });
     }
 );

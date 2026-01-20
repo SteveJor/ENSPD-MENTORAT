@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import {
     User,
     Edit3,
@@ -13,6 +12,7 @@ import {
     Linkedin,
     MessageCircle,
     Check,
+    AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,10 +20,9 @@ import { Input } from '../components/ui/Input';
 import { apiService } from '../services/api.service';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../config/constants';
 import type { ProfileUpdateData } from '../types';
-import { mockStudents } from '../services/mock.data';
+
 export const ProfilePage: React.FC = () => {
-    let { user, updateUser } = useAuth();
-    useNavigate();
+    const { user, updateUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -97,7 +96,6 @@ export const ProfilePage: React.FC = () => {
             } else {
                 setMessage({ type: 'error', text: response.error || ERROR_MESSAGES.serverError });
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             setMessage({ type: 'error', text: ERROR_MESSAGES.network });
         } finally {
@@ -115,10 +113,8 @@ export const ProfilePage: React.FC = () => {
         setIsEditing(false);
         setMessage(null);
     };
-user= mockStudents[0];
-    if (!user) return null;
 
-    const profileCompleted = user.profile_completed;
+    if (!user) return null;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -127,9 +123,7 @@ user= mockStudents[0];
                 <div>
                     <h1 className="text-3xl font-heading font-bold text-primary mb-2">Mon Profil</h1>
                     <p className="text-neutral-600">
-                        {profileCompleted
-                            ? 'Gérez vos informations personnelles'
-                            : 'Complétez votre profil pour participer au parrainage'}
+                        Gérez vos informations personnelles
                     </p>
                 </div>
                 {!isEditing && (
@@ -154,7 +148,7 @@ user= mockStudents[0];
                     {message.type === 'success' ? (
                         <Check className="w-5 h-5" />
                     ) : (
-                        <Edit3 className="w-5 h-5" />
+                        <AlertCircle className="w-5 h-5" />
                     )}
                     <p className="font-medium">{message.text}</p>
                 </div>
@@ -239,17 +233,17 @@ user= mockStudents[0];
                                     key={index}
                                     className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-2"
                                 >
-                  {comp}
+                                    {comp}
                                     {isEditing && (
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveCompetence(index)}
-                                            className="hover:text-red-600"
+                                            className="hover:text-red-600 text-lg font-bold"
                                         >
                                             ×
                                         </button>
                                     )}
-                </span>
+                                </span>
                             ))}
                             {(!formData.competences || formData.competences.length === 0) && (
                                 <p className="text-neutral-500 text-sm">Aucune compétence ajoutée</p>
@@ -290,17 +284,17 @@ user= mockStudents[0];
                                     key={index}
                                     className="px-3 py-1.5 bg-secondary/20 text-primary rounded-full text-sm flex items-center gap-2"
                                 >
-                  {interet}
+                                    {interet}
                                     {isEditing && (
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveInteret(index)}
-                                            className="hover:text-red-600"
+                                            className="hover:text-red-600 text-lg font-bold"
                                         >
                                             ×
                                         </button>
                                     )}
-                </span>
+                                </span>
                             ))}
                             {(!formData.centres_interet || formData.centres_interet.length === 0) && (
                                 <p className="text-neutral-500 text-sm">Aucun centre d'intérêt ajouté</p>

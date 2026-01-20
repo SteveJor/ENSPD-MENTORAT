@@ -33,12 +33,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const response = await apiService.getProfile();
             if (response.success && response.data) {
-                setUser(response.data);
+                // ✅ Normaliser les données utilisateur
+                setUser({
+                    ...response.data,
+                    niveau: String(response.data.niveau), // Convertir en string
+                    profile_completed: true,
+                });
             } else {
                 apiService.clearToken();
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
+            console.error('Erreur checkAuth:', error);
             apiService.clearToken();
         } finally {
             setLoading(false);
@@ -46,14 +51,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const login = async (matricule: string, token: string) => {
-        const response = await apiService.login({ matricule, token });
+        try {
+            const response = await apiService.login({ matricule, token });
 
-        if (response.success && response.data?.token && response.data?.student) {
-            apiService.setToken(response.data.token);
-            setUser(response.data.student);
-            navigate('/dashboard');
-        } else {
-            throw new Error(response.error || 'Échec de la connexion');
+            if (response.success && response.data?.token && response.data?.student) {
+                apiService.setToken(response.data.token);
+
+                // ✅ Normaliser les données utilisateur
+                const normalizedUser = {
+                    ...response.data.student,
+                    niveau: String(response.data.student.niveau),
+                    profile_completed: true,
+                };
+
+                setUser(normalizedUser);
+                navigate('/dashboard');
+            } else {
+                throw new Error(response.error || 'Échec de la connexion');
+            }
+        } catch (error: any) {
+            console.error('Erreur login:', error);
+            throw new Error(error?.error || error?.message || 'Erreur de connexion');
         }
     };
 
@@ -64,8 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUser = (userData: Partial<Student>) => {
-        if (user)
-        {
+        if (user) {
             setUser({ ...user, ...userData });
         }
     };
@@ -73,20 +90,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return (
         <AuthContext.Provider
             value={{
-        user,
-            loading,
-            login,
-            logout,
-            updateUser,
-            isAuthenticated: !!user,
-    }}
->
-    {children}
-    </AuthContext.Provider>
-);
+                user,
+                loading,
+                login,
+                logout,
+                updateUser,
+                isAuthenticated: !!user,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

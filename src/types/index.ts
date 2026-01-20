@@ -3,16 +3,17 @@ export interface Student {
     id: string;
     matricule: string;
     nom_complet: string;
-    niveau: string;
+    niveau: string; // ✅ Peut être "3" ou "4" (string)
     filiere: string;
     telephone?: string;
     competences?: string[];
     centres_interet?: string[];
     reseaux_sociaux?: SocialMedia;
-    photo_profil?: string;
-    token: string;
+    photo_profil?: string | null;
+    token?: string;
     created_at: string;
-    profile_completed: boolean;
+    updated_at?: string;
+    profile_completed?: boolean;
 }
 
 export interface SocialMedia {
@@ -21,21 +22,13 @@ export interface SocialMedia {
     instagram?: string;
     linkedin?: string;
     twitter?: string;
-}
-
-// Types pour l'attribution de mentors
-export interface MentorAssignment {
-    id: string;
-    mentor_id: string;
-    mentee_id: string;
-    date_attribution: string;
-    statut: 'actif' | 'inactif' | 'termine';
+    github?: string;
 }
 
 // Types pour les surprises
 export interface Surprise {
-    id: string;
-    mentor_id: string;
+    id: string | number;
+    mentor_id: string | number;
     titre: string;
     type_media: 'text' | 'image' | 'video' | 'audio' | 'link';
     contenu: string;
@@ -45,14 +38,14 @@ export interface Surprise {
 // Types pour l'authentification
 export interface LoginCredentials {
     matricule: string;
-    token: string;
+    token: string; // Correspond au "password" côté backend
 }
 
 export interface AuthResponse {
-    success: boolean;
     token?: string;
     student?: Student;
-    message?: string;
+    access_token?: string; // Flask retourne "access_token"
+    refresh_token?: string;
 }
 
 // Types pour la mise à jour du profil
@@ -73,25 +66,8 @@ export interface MentorDashboard {
 
 export interface MenteeDashboard {
     mentee: Student;
-    mentor: Student;
+    mentor: Student | null;
     surprises_received: Surprise[];
-}
-
-// Types pour les formulaires
-export interface FormField {
-    name: string;
-    label: string;
-    type: 'text' | 'textarea' | 'select' | 'multiselect' | 'file' | 'tel';
-    placeholder?: string;
-    required?: boolean;
-    options?: { value: string; label: string }[];
-    validation?: {
-        pattern?: RegExp;
-        minLength?: number;
-        maxLength?: number;
-        min?: number;
-        max?: number;
-    };
 }
 
 // Types pour les réponses API
@@ -100,28 +76,5 @@ export interface ApiResponse<T = any> {
     data?: T;
     message?: string;
     error?: string;
-}
-
-// Types pour les notifications
-export interface Notification {
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    message: string;
-    duration?: number;
-}
-
-// Types pour les filtres et la recherche
-export interface FilterOptions {
-    niveau?: string;
-    filiere?: string;
-    search?: string;
-}
-
-// Types pour les statistiques
-export interface Stats {
-    total_students: number;
-    total_mentors: number;
-    total_mentees: number;
-    active_assignments: number;
-    total_surprises: number;
+    msg?: string; // Flask utilise "msg"
 }
