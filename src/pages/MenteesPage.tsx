@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import {
     User,
     Users,
@@ -9,6 +10,7 @@ import {
     Heart,
     Search,
     Loader2,
+    AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -17,9 +19,11 @@ import { apiService } from '../services/api.service';
 import type { Student } from '../types';
 
 export const MenteesPage: React.FC = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [mentees, setMentees] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFiliere, setSelectedFiliere] = useState<string>('all');
 
@@ -29,13 +33,38 @@ export const MenteesPage: React.FC = () => {
 
     const loadMentees = async () => {
         setLoading(true);
+        setError(null);
+
+        console.log('🔄 Chargement des mentorés...');
+        console.log('👤 User actuel:', user);
+        console.log('🎓 Niveau:', user?.niveau);
+
         try {
-            const response = await apiService.getMentees();
-            if (response.success && response.data) {
-                setMentees(response.data);
+            // Vérifier que l'utilisateur est bien un mentor (niveau 4)
+            if (!user || user.niveau < 4) {
+                setError('Vous devez être étudiant de niveau 4 pour accéder à cette page');
+                setLoading(false);
+                return;
             }
-        } catch (error) {
-            console.error('Erreur lors du chargement des mentorés:', error);
+
+            const response = await apiService.getMentees();
+            console.log('📥 Réponse getMentees:', response);
+
+            if (response.success) {
+                if (response.data && response.data.length > 0) {
+                    console.log('✅ Mentorés chargés:', response.data);
+                    setMentees(response.data);
+                } else {
+                    console.log('ℹ️ Aucun mentoré trouvé');
+                    setMentees([]);
+                }
+            } else {
+                console.error('❌ Erreur:', response.error);
+                setError(response.error || 'Erreur lors du chargement');
+            }
+        } catch (error: any) {
+            console.error('❌ Exception:', error);
+            setError('Une erreur est survenue lors du chargement');
         } finally {
             setLoading(false);
         }
@@ -65,6 +94,26 @@ export const MenteesPage: React.FC = () => {
         );
     }
 
+    // Afficher l'erreur si présente
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="max-w-md">
+                    <CardContent className="text-center py-12">
+                        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                        <h2 className="text-xl font-bold text-neutral-800 mb-2">
+                            Erreur
+                        </h2>
+                        <p className="text-neutral-600 mb-4">{error}</p>
+                        <Button onClick={loadMentees}>
+                            Réessayer
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -86,39 +135,41 @@ export const MenteesPage: React.FC = () => {
             </div>
 
             {/* Filtres et recherche */}
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <Input
-                                placeholder="Rechercher un mentoré..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                icon={<Search className="w-5 h-5" />}
-                            />
+            {mentees.length > 0 && (
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex-1">
+                                <Input
+                                    placeholder="Rechercher un mentoré..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    icon={<Search className="w-5 h-5" />}
+                                />
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                {filieres.map((filiere) => (
+                                    <button
+                                        key={filiere}
+                                        onClick={() => setSelectedFiliere(filiere)}
+                                        className={`
+                                            px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
+                                            transition-all duration-200
+                                            ${
+                                            selectedFiliere === filiere
+                                                ? 'bg-primary text-white'
+                                                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                                        }
+                                        `}
+                                    >
+                                        {filiere === 'all' ? 'Toutes' : filiere}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex gap-2 overflow-x-auto pb-2">
-                            {filieres.map((filiere) => (
-                                <button
-                                    key={filiere}
-                                    onClick={() => setSelectedFiliere(filiere)}
-                                    className={`
-                                        px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
-                                        transition-all duration-200
-                                        ${
-                                        selectedFiliere === filiere
-                                            ? 'bg-primary text-white'
-                                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                                    }
-                                    `}
-                                >
-                                    {filiere === 'all' ? 'Toutes' : filiere}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Liste des mentorés */}
             {filteredMentees.length === 0 ? (
@@ -130,6 +181,11 @@ export const MenteesPage: React.FC = () => {
                                 ? 'Aucun mentoré ne correspond à votre recherche'
                                 : 'Aucun mentoré assigné pour le moment'}
                         </p>
+                        {mentees.length === 0 && (
+                            <p className="text-sm text-neutral-500 mt-2">
+                                L'assignation des mentors n'a peut-être pas encore été effectuée.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             ) : (

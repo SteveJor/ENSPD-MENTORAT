@@ -6,7 +6,7 @@ import type { Student } from '../types';
 interface AuthContextType {
     user: Student | null;
     loading: boolean;
-    login: (matricule: string, token: string) => Promise<void>;
+    login: (matricule: string, password: string) => Promise<void>;
     logout: () => void;
     updateUser: (userData: Partial<Student>) => void;
     isAuthenticated: boolean;
@@ -33,12 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const response = await apiService.getProfile();
             if (response.success && response.data) {
-                // ✅ Normaliser les données utilisateur
-                setUser({
-                    ...response.data,
-                    niveau: String(response.data.niveau), // Convertir en string
-                    profile_completed: true,
-                });
+                setUser(response.data);
             } else {
                 apiService.clearToken();
             }
@@ -50,28 +45,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const login = async (matricule: string, token: string) => {
+    const login = async (matricule: string, password: string) => {
         try {
-            const response = await apiService.login({ matricule, token });
+            const response = await apiService.login({
+                matricule: matricule.toUpperCase(),
+                password
+            });
 
             if (response.success && response.data?.token && response.data?.student) {
-                apiService.setToken(response.data.token);
-
-                // ✅ Normaliser les données utilisateur
-                const normalizedUser = {
-                    ...response.data.student,
-                    niveau: String(response.data.student.niveau),
-                    profile_completed: true,
-                };
-
-                setUser(normalizedUser);
+                setUser(response.data.student);
                 navigate('/dashboard');
             } else {
                 throw new Error(response.error || 'Échec de la connexion');
             }
         } catch (error: any) {
-            console.error('Erreur login:', error);
-            throw new Error(error?.error || error?.message || 'Erreur de connexion');
+            // Propager l'erreur pour que le composant Login puisse l'afficher
+            throw new Error(error?.message || 'Erreur de connexion');
         }
     };
 

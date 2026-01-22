@@ -9,6 +9,14 @@ import {
     Phone,
     Loader2,
     Users,
+    FileText,
+    Image as ImageIcon,
+    Video,
+    Music,
+    Link as LinkIcon,
+    Sparkles,
+    ExternalLink,
+    Calendar,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -23,7 +31,7 @@ export const DashboardPage: React.FC = () => {
     const [mentees, setMentees] = useState<Student[]>([]);
     const [surprises, setSurprises] = useState<Surprise[]>([]);
 
-    const isMentor = user?.niveau && parseInt(user.niveau) >= 4;
+    const isMentor = user?.niveau && user.niveau >= 4;
 
     useEffect(() => {
         loadDashboardData();
@@ -104,7 +112,7 @@ export const DashboardPage: React.FC = () => {
             {isMentor ? (
                 <MentorContent mentees={mentees} navigate={navigate} />
             ) : (
-                <MenteeContent mentor={mentor} surprises={surprises} />
+                <MenteeContent mentor={mentor} surprises={surprises} navigate={navigate} />
             )}
         </div>
     );
@@ -200,10 +208,10 @@ const MentorContent: React.FC<{ mentees: Student[]; navigate: any }> = ({ mentee
 };
 
 // Composant pour les mentorés
-const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[] }> = ({
-                                                                                        mentor,
-                                                                                        surprises,
-                                                                                    }) => {
+const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[]; navigate: any }> = ({
+                                                                                                       mentor,
+                                                                                                       surprises,
+                                                                                                   }) => {
     if (!mentor) {
         return (
             <Card>
@@ -295,30 +303,245 @@ const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[] }>
             <div>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Gift className="w-5 h-5" />
-                            Surprises
-                        </CardTitle>
-                        <CardDescription>Messages de votre parrain</CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Gift className="w-5 h-5" />
+                                    Surprises
+                                </CardTitle>
+                                <CardDescription>Messages de votre parrain</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {surprises.length === 0 ? (
-                            <p className="text-neutral-500 text-center py-6">Aucune surprise pour le moment</p>
+                            <div className="text-center py-6">
+                                <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Gift className="w-8 h-8 text-secondary" />
+                                </div>
+                                <p className="text-neutral-500 text-sm">Aucune surprise pour le moment</p>
+                            </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                                 {surprises.slice(0, 5).map((surprise) => (
-                                    <div
-                                        key={surprise.id}
-                                        className="p-3 bg-gradient-to-r from-secondary/10 to-primary/5 rounded-lg"
-                                    >
-                                        <p className="font-bold text-primary text-sm mb-1">{surprise.titre}</p>
-                                        <p className="text-sm text-neutral-600 line-clamp-3">{surprise.contenu}</p>
-                                    </div>
+                                    <SurprisePreviewCard key={surprise.id} surprise={surprise} />
                                 ))}
                             </div>
                         )}
                     </CardContent>
                 </Card>
+            </div>
+        </div>
+    );
+};
+
+// Composant de prévisualisation de surprise
+const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [mediaLoading, setMediaLoading] = useState(false);
+    const [mediaError, setMediaError] = useState(false);
+
+    const getMediaIcon = (type: string) => {
+        const upperType = type.toUpperCase();
+        switch (upperType) {
+            case 'TEXTE':
+                return <FileText className="w-4 h-4" />;
+            case 'IMAGE':
+            case 'GIF':
+                return <ImageIcon className="w-4 h-4" />;
+            case 'VIDEO':
+                return <Video className="w-4 h-4" />;
+            case 'AUDIO':
+                return <Music className="w-4 h-4" />;
+            case 'LIEN':
+                return <LinkIcon className="w-4 h-4" />;
+            default:
+                return <Gift className="w-4 h-4" />;
+        }
+    };
+
+    const getMediaColor = (type: string) => {
+        const upperType = type.toUpperCase();
+        switch (upperType) {
+            case 'TEXTE':
+                return 'bg-blue-100 text-blue-600';
+            case 'IMAGE':
+            case 'GIF':
+                return 'bg-purple-100 text-purple-600';
+            case 'VIDEO':
+                return 'bg-red-100 text-red-600';
+            case 'AUDIO':
+                return 'bg-green-100 text-green-600';
+            case 'LIEN':
+                return 'bg-yellow-100 text-yellow-600';
+            default:
+                return 'bg-neutral-100 text-neutral-600';
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+        if (diffInHours < 24) {
+            return new Intl.DateTimeFormat('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+            }).format(date);
+        } else if (diffInHours < 48) {
+            return 'Hier';
+        } else {
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+            }).format(date);
+        }
+    };
+
+    const isUrl = (str: string) => {
+        try {
+            return str.startsWith('http://') || str.startsWith('https://');
+        } catch {
+            return false;
+        }
+    };
+
+    const renderMediaPreview = () => {
+        const type = surprise.type_media.toUpperCase();
+        const content = surprise.contenu;
+
+        // Si c'est du texte ou pas une URL valide
+        if (type === 'TEXTE' || !isUrl(content)) {
+            return (
+                <div className="relative">
+                    <p className={`text-sm text-neutral-600 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                        {content}
+                    </p>
+                    {!isExpanded && content.length > 100 && (
+                        <button
+                            onClick={() => setIsExpanded(true)}
+                            className="text-xs text-primary hover:underline mt-1"
+                        >
+                            Lire plus
+                        </button>
+                    )}
+                    {isExpanded && (
+                        <button
+                            onClick={() => setIsExpanded(false)}
+                            className="text-xs text-primary hover:underline mt-1"
+                        >
+                            Voir moins
+                        </button>
+                    )}
+                </div>
+            );
+        }
+
+        // Affichage selon le type de média
+        switch (type) {
+            case 'IMAGE':
+            case 'GIF':
+                return (
+                    <div className="relative bg-neutral-100 rounded-lg overflow-hidden h-32 flex items-center justify-center">
+                        {mediaLoading && (
+                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                        )}
+                        {!mediaError && (
+                            <img
+                                src={content}
+                                alt={surprise.titre}
+                                className={`max-w-full max-h-full object-cover transition-opacity ${
+                                    mediaLoading ? 'opacity-0' : 'opacity-100'
+                                }`}
+                                onLoadStart={() => setMediaLoading(true)}
+                                onLoad={() => setMediaLoading(false)}
+                                onError={() => {
+                                    setMediaLoading(false);
+                                    setMediaError(true);
+                                }}
+                                loading="lazy"
+                            />
+                        )}
+                        {mediaError && (
+                            <div className="text-center p-4">
+                                <ImageIcon className="w-8 h-8 text-neutral-400 mx-auto mb-1" />
+                                <p className="text-xs text-neutral-500">Image non disponible</p>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'VIDEO':
+                return (
+                    <div className="relative bg-black rounded-lg overflow-hidden h-32 flex items-center justify-center">
+                        <Video className="w-8 h-8 text-white/60" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+                                <div className="w-0 h-0 border-l-8 border-l-white border-y-6 border-y-transparent ml-1" />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'AUDIO':
+                return (
+                    <div className="bg-neutral-50 rounded-lg p-3 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <Music className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs text-neutral-500">Audio</p>
+                            <p className="text-sm font-medium text-neutral-700">Fichier audio</p>
+                        </div>
+                    </div>
+                );
+
+            case 'LIEN':
+                return (
+                    <a
+                        href={content}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block p-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors group"
+                    >
+                        <div className="flex items-center gap-2">
+                            <LinkIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                            <p className="text-xs text-primary truncate group-hover:underline flex-1">
+                                {content}
+                            </p>
+                            <ExternalLink className="w-3 h-3 text-primary flex-shrink-0 opacity-50 group-hover:opacity-100" />
+                        </div>
+                    </a>
+                );
+
+            default:
+                return (
+                    <p className="text-sm text-neutral-600 truncate">{content}</p>
+                );
+        }
+    };
+
+    return (
+        <div className="p-3 bg-gradient-to-br from-secondary/5 to-primary/5 rounded-lg border border-primary/10 hover:border-primary/20 transition-all">
+            <div className="flex items-start gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-secondary flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-primary text-sm line-clamp-1">{surprise.titre}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <div className={`${getMediaColor(surprise.type_media)} px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                            {getMediaIcon(surprise.type_media)}
+                            <span className="text-xs capitalize">{surprise.type_media.toLowerCase()}</span>
+                        </div>
+                        <span className="text-xs text-neutral-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(surprise.date_creation)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-2">
+                {renderMediaPreview()}
             </div>
         </div>
     );

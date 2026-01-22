@@ -3,7 +3,7 @@ export interface Student {
     id: string;
     matricule: string;
     nom_complet: string;
-    niveau: string; // ✅ Peut être "3" ou "4" (string)
+    niveau: number; // ✅ Backend retourne un number (3 ou 4)
     filiere: string;
     telephone?: string;
     competences?: string[];
@@ -13,7 +13,6 @@ export interface Student {
     token?: string;
     created_at: string;
     updated_at?: string;
-    profile_completed?: boolean;
 }
 
 export interface SocialMedia {
@@ -25,12 +24,15 @@ export interface SocialMedia {
     github?: string;
 }
 
+// ✅ Types de média UPPERCASE (comme backend Flask)
+export type MediaType = 'TEXTE' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'LIEN' | 'GIF' | 'DEFI';
+
 // Types pour les surprises
 export interface Surprise {
-    id: string | number;
-    mentor_id: string | number;
+    id: number;
+    mentor_id: number;
     titre: string;
-    type_media: 'text' | 'image' | 'video' | 'audio' | 'link';
+    type_media: MediaType; // ✅ UPPERCASE
     contenu: string;
     date_creation: string;
 }
@@ -38,43 +40,52 @@ export interface Surprise {
 // Types pour l'authentification
 export interface LoginCredentials {
     matricule: string;
-    token: string; // Correspond au "password" côté backend
+    password: string; // ✅ Backend attend "password" pas "token"
 }
 
 export interface AuthResponse {
-    token?: string;
-    student?: Student;
-    access_token?: string; // Flask retourne "access_token"
-    refresh_token?: string;
+    access_token: string;
+    refresh_token: string;
+    student_name: string;
 }
 
 // Types pour la mise à jour du profil
 export interface ProfileUpdateData {
+    telephone?: string;
+    photo_profil?: string;
     competences?: string[];
     centres_interet?: string[];
     reseaux_sociaux?: SocialMedia;
-    photo_profil?: string;
-    telephone?: string;
 }
+
+// ✅ Types pour les relations mentor/mentee
+export interface MentorRelation {
+    role: 'mentor';
+    mentorees: Student[];
+}
+
+export interface MenteeRelation {
+    role: 'mentee';
+    mentor: Student;
+}
+
+export type RelationData = MentorRelation | MenteeRelation;
 
 // Types pour le dashboard
 export interface MentorDashboard {
-    mentor: Student;
     mentees: Student[];
     surprises_sent: Surprise[];
 }
 
 export interface MenteeDashboard {
-    mentee: Student;
     mentor: Student | null;
     surprises_received: Surprise[];
 }
 
-// Types pour les réponses API
+// Types pour les réponses API standardisées
 export interface ApiResponse<T = any> {
     success: boolean;
     data?: T;
     message?: string;
     error?: string;
-    msg?: string; // Flask utilise "msg"
 }

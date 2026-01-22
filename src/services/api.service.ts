@@ -3,9 +3,11 @@ import { API_ENDPOINTS } from '../config/constants';
 import type {
     ApiResponse,
     LoginCredentials,
+    AuthResponse,
     Student,
     ProfileUpdateData,
     Surprise,
+    RelationData,
     MentorDashboard,
     MenteeDashboard,
 } from '../types';
@@ -19,51 +21,51 @@ class ApiService {
         localStorage.removeItem('auth_token');
     }
 
-    /* ========= AUTH ========= */
+    getToken(): string | null {
+        return localStorage.getItem('auth_token');
+    }
 
-    async login(credentials: LoginCredentials): Promise<{
-        data: { token: undefined; student: Student | null; error: null };
-        success: boolean;
-        error: string
-    }> {
+    /* ========= AUTH ========= */
+    async login(credentials: LoginCredentials): Promise<ApiResponse<{ token: string; student: Student }>> {
         try {
-            // ✅ Backend Flask attend { matricule, password }
-            const { data } = await api.post(API_ENDPOINTS.auth.login, {
+            const { data } = await api.post<AuthResponse>(API_ENDPOINTS.auth.login, {
                 matricule: credentials.matricule,
-                password: credentials.token, // Le "token" du frontend = "password" du backend
+                password: credentials.password,
             });
 
-            // ✅ Transformer la réponse Flask
-            return {
-                error: "",
-                success: true,
-                data: {
-                    token: data.access_token, // Flask retourne "access_token"
-                    student: await this.getCurrentStudent(),
-                    error: null
+            if (data.access_token) {
+                // ✅ Stocker le token AVANT de récupérer le profil
+                this.setToken(data.access_token);
+
+                const student = await this.getCurrentStudent();
+
+                if (student) {
+                    return {
+                        success: true,
+                        data: {
+                            token: data.access_token,
+                            student,
+                        },
+                    };
                 }
-            };
+            }
+
+            throw new Error('Échec de la connexion');
         } catch (error: any) {
             return {
-                data: {
-                    token: undefined,
-                    student: null,
-                    error: null
-                },
                 success: false,
-                error: error.error || 'Erreur de connexion'
+                error: error.response?.data?.msg || error.message || 'Erreur de connexion',
             };
         }
     }
 
     /* ========= PROFIL ========= */
-
     async getCurrentStudent(): Promise<Student | null> {
         try {
             const { data } = await api.get(API_ENDPOINTS.students.me);
-            return data.data.student || data.data;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            return data.student;
         } catch (error) {
+            console.error('Erreur getCurrentStudent:', error);
             return null;
         }
     }
@@ -73,12 +75,12 @@ class ApiService {
             const { data } = await api.get(API_ENDPOINTS.students.me);
             return {
                 success: true,
-                data: data.data.student || data.data,
+                data: data.student,
             };
         } catch (error: any) {
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la récupération du profil',
             };
         }
     }
@@ -89,102 +91,186 @@ class ApiService {
             if (!user) throw new Error('Utilisateur non connecté');
 
             const { data } = await api.put(
-                API_ENDPOINTS.students.update(parseInt(user.id)),
+                API_ENDPOINTS.students.update(Number(user.id)),
                 payload
             );
 
             return {
                 success: true,
-                data: data.data.student || data.data,
-                message: data.message || 'Profil mis à jour',
+                data: data.student,
+                message: data.msg || 'Profil mis à jour',
             };
         } catch (error: any) {
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la mise à jour',
             };
         }
     }
 
-    /* ========= MENTOR ========= */
+    /* ========= RELATIONS MENTOR/MENTEE ========= */
+    async getRelation(): Promise<ApiResponse<RelationData>> {
+        try {
+            const { data } = await api.get(API_ENDPOINTS.mentors.relation);
+            return {
+                success: true,
+                data,
+            };
+        } catch (error: any) {
+            console.error('Erreur getRelation:', error);
+            return {
+                success: false,
+                error: error.response?.data?.msg || 'Erreur lors de la récupération de la relation',
+            };
+        }
+    }
 
+    /* ========= DASHBOARD MENTOR ========= */
     async getMentorDashboard(): Promise<ApiResponse<MentorDashboard>> {
         try {
-            const { data } = await api.get(API_ENDPOINTS.mentors.dashboard);
-            return {
-                success: true,
-                data: data.data,
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.error,
-            };
-        }
-    }
+            const relationResponse = await this.getRelation();
 
-    async getMentees(): Promise<ApiResponse<Student[]>> {
-        try {
-            const { data } = await api.get(API_ENDPOINTS.mentors.mentees);
-            return {
-                success: true,
-                data: data.data || [],
-            };
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.error,
-            };
-        }
-    }
+            if (!relationResponse.success || !relationResponse.data) {
+                throw new Error('Impossible de récupérer les mentorés');
+            }
 
-    /* ========= MENTORÉ ========= */
+            if (relationResponse.data.role !== 'mentor') {
+                throw new Error('Vous n\'êtes pas un mentor');
+            }
 
-    async getMenteeDashboard(): Promise<ApiResponse<MenteeDashboard>> {
-        try {
-            const { data } = await api.get(API_ENDPOINTS.students.me);
+            const mentees = relationResponse.data.mentorees || [];
+            const surprisesResponse = await this.getSurprises();
+
             return {
                 success: true,
                 data: {
-                    mentee: data.data.student,
-                    mentor: data.data.mentor || null,
-                    surprises_received: data.data.surprises || [],
+                    mentees,
+                    surprises_sent: surprisesResponse.data || [],
                 },
             };
         } catch (error: any) {
+            console.error('Erreur getMentorDashboard:', error);
             return {
                 success: false,
-                error: error.error,
+                error: error.message || 'Erreur lors du chargement du dashboard',
             };
         }
     }
 
-    /* ========= SURPRISE ========= */
+    /* ========= RÉCUPÉRER LES MENTORÉS ========= */
+    async getMentees(): Promise<ApiResponse<Student[]>> {
+        try {
+            const relationResponse = await this.getRelation();
 
-    async createSurprise(
-        payload: {
-            titre: string;
-            type_media: "TEXTE" | "IMAGE" | "VIDEO" | "AUDIO" | "LIEN";
-            contenu: string;
-            mentor_id: string
+            if (!relationResponse.success || !relationResponse.data) {
+                console.log('⚠️ Pas de relation trouvée');
+                return {
+                    success: true,
+                    data: [],
+                };
+            }
+
+            if (relationResponse.data.role === 'mentor') {
+                console.log('✅ Role: mentor, mentorés:', relationResponse.data.mentorees);
+                return {
+                    success: true,
+                    data: relationResponse.data.mentorees || [],
+                };
+            }
+
+            console.log('ℹ️ Role:', relationResponse.data.role, '- Pas de mentorés');
+            return {
+                success: true,
+                data: [],
+            };
+        } catch (error: any) {
+            console.error('❌ Erreur getMentees:', error);
+            return {
+                success: false,
+                error: error.response?.data?.msg || 'Erreur lors de la récupération des mentorés',
+            };
         }
-    ): Promise<ApiResponse<Surprise>> {
+    }
+
+    /* ========= DASHBOARD MENTORÉ ========= */
+    async getMenteeDashboard(): Promise<ApiResponse<MenteeDashboard>> {
+        try {
+            // ✅ 1. Récupérer le profil de l'étudiant connecté
+            const profileResponse = await this.getProfile();
+
+            if (!profileResponse.success || !profileResponse.data) {
+                throw new Error('Impossible de récupérer le profil');
+            }
+
+            const currentStudent = profileResponse.data;
+
+            // ✅ 2. Récupérer la relation mentor/mentee
+            const relationResponse = await this.getRelation();
+
+            let mentor: Student | null = null;
+            let surprises: Surprise[] = [];
+
+            if (relationResponse.success && relationResponse.data) {
+                if (relationResponse.data.role === 'mentee') {
+                    mentor = relationResponse.data.mentor;
+
+                    // ✅ 3. CORRECTION CRITIQUE : Passer l'ID de l'étudiant connecté (mentee)
+                    // Selon la doc : GET /mentor/<student_id> où student_id = ID du mentee
+                    try {
+                        const { data } = await api.get(
+                            API_ENDPOINTS.mentors.surprises(Number(currentStudent.id))
+                        );
+
+                        // ✅ L'API retourne directement un tableau
+                        surprises = Array.isArray(data) ? data : [];
+
+                        console.log('Surprises reçues:', surprises);
+                    } catch (error: any) {
+                        console.error('Erreur récupération surprises:', error);
+                        // Si pas de mentor assigné ou erreur, on continue avec un tableau vide
+                        surprises = [];
+                    }
+                }
+            }
+
+            return {
+                success: true,
+                data: {
+                    mentor,
+                    surprises_received: surprises,
+                },
+            };
+        } catch (error: any) {
+            console.error('Erreur getMenteeDashboard:', error);
+            return {
+                success: false,
+                error: error.message || 'Erreur lors du chargement du dashboard',
+            };
+        }
+    }
+
+    /* ========= SURPRISES ========= */
+    async createSurprise(payload: {
+        titre: string;
+        type_media: string;
+        contenu: string;
+    }): Promise<ApiResponse<Surprise>> {
         try {
             const { data } = await api.post(API_ENDPOINTS.surprises.create, {
                 titre: payload.titre,
-                type_media: payload.type_media.toUpperCase(), // ✅ Backend attend UPPERCASE
+                type_media: payload.type_media.toUpperCase(),
                 contenu: payload.contenu,
             });
 
             return {
                 success: true,
-                data: data.data.surprise || data.data,
-                message: data.message,
+                data: data.surprise,
+                message: data.msg || 'Surprise créée avec succès',
             };
         } catch (error: any) {
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la création de la surprise',
             };
         }
     }
@@ -193,15 +279,15 @@ class ApiService {
         try {
             const { data } = await api.get(API_ENDPOINTS.surprises.list);
 
-            // ✅ Le backend retourne directement un tableau
             return {
                 success: true,
-                data: Array.isArray(data.data) ? data.data : data,
+                data: Array.isArray(data) ? data : [],
             };
         } catch (error: any) {
+            console.error('Erreur getSurprises:', error);
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la récupération des surprises',
             };
         }
     }
@@ -218,27 +304,28 @@ class ApiService {
 
             return {
                 success: true,
-                data: data.data.surprise || data.data,
+                data: data.surprise,
+                message: data.msg || 'Surprise mise à jour',
             };
         } catch (error: any) {
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la mise à jour',
             };
         }
     }
 
     async deleteSurprise(id: number): Promise<ApiResponse<void>> {
         try {
-            await api.delete(API_ENDPOINTS.surprises.delete(id));
+            const { data } = await api.delete(API_ENDPOINTS.surprises.delete(id));
             return {
                 success: true,
-                message: 'Surprise supprimée',
+                message: data.msg || 'Surprise supprimée',
             };
         } catch (error: any) {
             return {
                 success: false,
-                error: error.error,
+                error: error.response?.data?.msg || 'Erreur lors de la suppression',
             };
         }
     }

@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/constants';
-import { mapHttpError } from './error.mapper';
 
 const api = axios.create({
     baseURL: API_CONFIG.baseURL,
+    timeout: API_CONFIG.timeout,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -12,51 +12,48 @@ const api = axios.create({
 /* =====================
    REQUEST INTERCEPTOR
 ===================== */
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-});
+);
 
 /* =====================
    RESPONSE INTERCEPTOR
-   ✅ Transforme les réponses Flask en format standardisé
+   ✅ Gère les réponses Flask de manière cohérente
 ===================== */
 api.interceptors.response.use(
     (response) => {
-        // ✅ Transformer la réponse Flask en format attendu par le frontend
-        const data = response.data;
-
-        // Si la réponse contient déjà "success", on la retourne telle quelle
-        if ('success' in data) {
-            return response;
-        }
-
-        // ✅ Transformer les réponses Flask standard
-        return {
-            ...response,
-            data: {
-                success: true,
-                data: data.student || data.surprise || data.mentor || data,
-                message: data.msg || data.message,
-            },
-        };
+        // La réponse est déjà au bon format, on la retourne telle quelle
+        return response;
     },
     (error) => {
         const status = error.response?.status;
-        const errorMessage = error.response?.data?.msg || error.response?.data?.message;
+        const errorData = error.response?.data;
 
+        // Gestion de la déconnexion automatique
         if (status === 401) {
             localStorage.removeItem('auth_token');
-            window.location.href = '/login';
+            // Éviter la boucle infinie si on est déjà sur /login
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
 
+        // Retourner une erreur structurée
         return Promise.reject({
-            success: false,
-            status,
-            error: errorMessage || mapHttpError(status),
+            response: {
+                status,
+                data: errorData,
+            },
+            message: errorData?.msg || errorData?.message || 'Erreur réseau',
         });
     }
 );

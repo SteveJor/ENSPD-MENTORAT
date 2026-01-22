@@ -17,13 +17,13 @@ export const Layout = () => {
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const isMentor = user?.niveau && parseInt(user.niveau) >= 4;
+    const isMentor = user?.niveau && user.niveau >= 4;
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Mon Profil', href: '/profile', icon: User },
-        ...(isMentor ? [{ name: 'Mes Mentorés', href: '/mentees', icon: Users }] : []),
-        { name: 'Surprises', href: '/surprises', icon: Gift },
+        ...(isMentor ? [{ name: 'Mes Mentorés', href: '/mentees', icon: Users }, { name: 'Surprises', href: '/surprises', icon: Gift },] : []),
+
     ];
 
     const handleLogout = () => {

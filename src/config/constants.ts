@@ -3,56 +3,59 @@ export const APP_CONFIG = {
     name: 'ENSPD Mentorat',
     version: '1.0.0',
     description: 'Plateforme de parrainage académique ENSPD',
-    useMockApi: false, // ✅ DÉSACTIVER LE MODE MOCK pour utiliser la vraie API
 };
 
 export const API_CONFIG = {
-    baseURL: 'https://parrainsgit.onrender.com/api', // ✅ Votre URL backend
+    baseURL: 'https://parrainsgit.onrender.com',
     timeout: 10000,
 };
 
-// ✅ Endpoints corrigés pour correspondre au backend Flask
+// ✅ Endpoints - VÉRIFIEZ QUE VOTRE BACKEND CORRESPOND
 export const API_ENDPOINTS = {
     auth: {
-        login: '/auth/login', // ✅ POST /api/auth/login
-        refresh: '/auth/refresh', // ✅ POST /api/auth/refresh
+        login: '/api/auth/login',
+        refresh: '/api/auth/refresh',
     },
     students: {
-        me: '/student/me', // ✅ GET /api/student/me
-        list: '/student/', // ✅ GET /api/student/
-        update: (id: number) => `/student/${id}`, // ✅ PUT /api/student/:id
-        delete: (id: number) => `/student/${id}`, // ✅ DELETE /api/student/:id
+        me: '/api/student/me',
+        list: '/api/student/',
+        update: (id: number) => `/api/student/${id}`,
+        delete: (id: number) => `/api/student/${id}`,
     },
     mentors: {
-        dashboard: '/mentor/dashboard', // ✅ GET /api/mentor/dashboard
-        mentees: '/mentor/filleuls', // ✅ GET /api/mentor/filleuls
+        // ⚠️ VÉRIFIEZ CES ROUTES SUR VOTRE BACKEND
+        relation: '/api/mentor/relation',  // ← 404 ici
+        surprises: (studentId: number) => `/api/mentor/${studentId}`,
+
+        // 🔧 SI VOTRE BACKEND UTILISE UN AUTRE CHEMIN, CHANGEZ-LE ICI
+        // Exemple alternatif si votre backend a /api/mentor au lieu de /mentor :
+        // relation: '/api/mentor/relation',
+        // surprises: (studentId: number) => `/api/mentor/${studentId}`,
     },
     surprises: {
-        create: '/surprises/', // ✅ POST /api/surprises/
-        list: '/surprises/', // ✅ GET /api/surprises/
-        update: (id: number) => `/surprises/${id}`, // ✅ PUT /api/surprises/:id
-        delete: (id: number) => `/surprises/${id}`, // ✅ DELETE /api/surprises/:id
+        create: '/api/surprises/',
+        list: '/api/surprises/',
+        update: (id: number) => `/api/surprises/${id}`,
+        delete: (id: number) => `/api/surprises/${id}`,
     },
 };
 
-// ... (reste du fichier inchangé)
 // Assets
 export const ASSETS = {
     logo: '/logo/enspd_mentorat_logo.png',
     defaultAvatar: '/images/default-avatar.png',
-    placeholders: {
-        profile: '/images/placeholder-profile.svg',
-    },
 };
 
 // Messages d'erreur
 export const ERROR_MESSAGES = {
     network: 'Erreur de connexion. Veuillez vérifier votre connexion internet.',
-    unauthorized: 'Matricule ou code incorrect. Veuillez réessayer.',
+    unauthorized: 'Matricule ou mot de passe incorrect.',
     notFound: 'Ressource introuvable.',
     serverError: 'Erreur serveur. Veuillez réessayer plus tard.',
-    invalidCredentials: 'Matricule ou token invalide.',
-    invalidOTP: 'Code OTP invalide.',
+    invalidCredentials: 'Identifiants invalides',
+    forbidden: 'Accès refusé. Seuls les étudiants de niveau 4 peuvent effectuer cette action.',
+    cors: 'Erreur CORS - Le backend ne répond pas correctement',
+    endpoint404: 'Endpoint introuvable - Vérifiez la configuration backend',
 };
 
 // Messages de succès
@@ -65,65 +68,31 @@ export const SUCCESS_MESSAGES = {
 // Validation
 export const VALIDATION = {
     matricule: {
-        minLength: 5,
-        maxLength: 20,
+        minLength: 4,
+        maxLength: 15,
         pattern: /^[A-Z0-9]+$/,
     },
-    token: {
-        length: 6,
-        pattern: /^[0-9]{6}$/,
-    },
-    otp: {
-        length: 6,
-    },
-    phone: {
-        pattern: /^(\+237)?[6][0-9]{8}$/,
+    password: {
+        minLength: 3,
     },
 };
 
-// Niveaux académiques
-export const ACADEMIC_LEVELS = [
-    { value: '1', label: 'Niveau 1' },
-    { value: '2', label: 'Niveau 2' },
-    { value: '3', label: 'Niveau 3' },
-    { value: '4', label: 'Niveau 4' },
-    { value: '5', label: 'Niveau 5' },
-];
-
-// Filières
-export const FILIERES = [
-    { value: 'INFO', label: 'Informatique' },
-    { value: 'TELECOM', label: 'Télécommunications' },
-    { value: 'ENERGIE', label: 'Énergie' },
-    { value: 'GENIE_CIVIL', label: 'Génie Civil' },
-    { value: 'ELECTRO', label: 'Électrotechnique' },
-];
-
-// Types de médias pour les surprises
+// ✅ Types de médias UPPERCASE (comme backend)
 export const MEDIA_TYPES = [
-    { value: 'text', label: 'Texte', icon: 'FileText' },
-    { value: 'image', label: 'Image', icon: 'Image' },
-    { value: 'video', label: 'Vidéo', icon: 'Video' },
-    { value: 'audio', label: 'Audio', icon: 'Music' },
-    { value: 'link', label: 'Lien', icon: 'Link' },
+    { value: 'TEXTE', label: 'Message texte', icon: 'FileText', description: 'Un message personnalisé', placeholder: 'Écrivez votre message...' },
+    { value: 'IMAGE', label: 'Image', icon: 'Image', description: 'Image inspirante', placeholder: 'URL de l\'image (https://...)' },
+    { value: 'VIDEO', label: 'Vidéo', icon: 'Video', description: 'Vidéo motivante', placeholder: 'URL de la vidéo (https://...)' },
+    { value: 'AUDIO', label: 'Audio', icon: 'Music', description: 'Message vocal', placeholder: 'URL de l\'audio (https://...)' },
+    { value: 'LIEN', label: 'Lien', icon: 'Link', description: 'Ressource utile', placeholder: 'https://...' },
+    { value: 'GIF', label: 'GIF', icon: 'Image', description: 'GIF animé', placeholder: 'URL du GIF (https://...)' },
 ];
-
-// Phases du système
-export const SYSTEM_PHASES = {
-    PRE_PARRAINAGE: 'pre_parrainage',
-    COMPLETION_PROFIL: 'completion_profil',
-    ATTRIBUTION: 'attribution',
-    POST_ATTRIBUTION: 'post_attribution',
-};
 
 // Routes
 export const ROUTES = {
     home: '/',
     login: '/login',
-    verifyOtp: '/verify-otp',
     dashboard: '/dashboard',
     profile: '/profile',
-    editProfile: '/profile/edit',
     surprises: '/surprises',
     createSurprise: '/surprises/create',
     mentees: '/mentees',
