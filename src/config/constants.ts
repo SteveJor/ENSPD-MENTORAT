@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
 
 // Assets
 export const ASSETS = {
-    logo: '/logo/enspd_mentorat_logo.png',
+    logo: '/logo/logo_1.png',
     defaultAvatar: '/images/default-avatar.png',
 };
 

@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import {
     LayoutDashboard,
     User,
-    Users,
+    // Users,
     Gift,
     LogOut,
     Menu,
@@ -22,8 +22,8 @@ export const Layout = () => {
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Mon Profil', href: '/profile', icon: User },
-        ...(isMentor ? [{ name: 'Mes Mentorés', href: '/mentees', icon: Users }, { name: 'Surprises', href: '/surprises', icon: Gift },] : []),
-
+        ...(isMentor ? [ { name: 'Surprises', href: '/surprises', icon: Gift },] : []),
+        // { name: 'Mes Mentorés', href: '/mentees', icon: Users },
     ];
 
     const handleLogout = () => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import ReactPlayer from 'react-player';
 import {
     User,
     GraduationCap,
@@ -30,23 +31,68 @@ export const DashboardPage: React.FC = () => {
     const [mentor, setMentor] = useState<Student | null>(null);
     const [mentees, setMentees] = useState<Student[]>([]);
     const [surprises, setSurprises] = useState<Surprise[]>([]);
+    const [timeRemaining, setTimeRemaining] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const [isAssignmentTime, setIsAssignmentTime] = useState(false);
+    const [dashboardLoaded, setDashboardLoaded] = useState(false);
+
 
     const isMentor = user?.niveau && user.niveau >= 4;
 
+    // Date cible: Vendredi 24 janvier 2026 à 11:50
+    // const targetDate = new Date('2026-01-23T7:55:00');
+    const targetDate = new Date(
+        2026, // année
+        0,    // janvier (⚠️ 0-based)
+        23,
+        12,
+        0,
+        0
+    );
+
     useEffect(() => {
-        loadDashboardData();
+        const interval = setInterval(() => {
+            const now = new Date();
+            const diff = targetDate.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                clearInterval(interval);
+                setIsAssignmentTime(true);
+                setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                return;
+            }
+
+            setTimeRemaining({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((diff / (1000 * 60)) % 60),
+                seconds: Math.floor((diff / 1000) % 60),
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (isAssignmentTime && !dashboardLoaded) {
+            loadDashboardData();
+            setDashboardLoaded(true);
+        }
+    }, [isAssignmentTime]);
+
 
     const loadDashboardData = async () => {
         setLoading(true);
         try {
+            console.log("jjhi")
             if (isMentor) {
+                console.log("isMentor")
                 const response = await apiService.getMentorDashboard();
                 if (response.success && response.data) {
                     setMentees(response.data.mentees || []);
                     setSurprises(response.data.surprises_sent || []);
                 }
             } else {
+                console.log("Mentor")
                 const response = await apiService.getMenteeDashboard();
                 if (response.success && response.data) {
                     setMentor(response.data.mentor);
@@ -60,12 +106,101 @@ export const DashboardPage: React.FC = () => {
         }
     };
 
-    if (loading) {
+    if (isAssignmentTime && loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="text-center">
                     <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
                     <p className="text-neutral-600">Chargement de votre tableau de bord...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Affichage du compte à rebours si la date n'est pas encore atteinte
+    if (!isAssignmentTime) {
+        return (
+            <div className="space-y-8">
+                {/* Welcome Section */}
+                <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl p-6 sm:p-8">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h1 className="text-3xl font-heading font-bold mb-2">
+                                Bienvenue, {user?.nom_complet} !
+                            </h1>
+                            <p className="text-white/90 text-lg">
+                                Connecté en tant qu'étudiant
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <GraduationCap className="w-4 h-4" />
+                                    <span>{user?.filiere} - Niveau {user?.niveau}</span>
+                                </div>
+                                {user?.telephone && (
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="w-4 h-4" />
+                                        <span>{user.telephone}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        {user?.photo_profil && (
+                            <img
+                                src={user.photo_profil}
+                                alt="Photo de profil"
+                                className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* Countdown Section */}
+                <div className="max-w-2xl mx-auto">
+                    <Card className="overflow-hidden">
+                        <div className=" p-8 sm:p-12 text-center relative">
+                            <div className="relative z-10">
+                                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-dark mb-3">
+                                    Préparation en cours...
+                                </h2>
+
+                                {/* Countdown Timer */}
+                                <div className="grid grid-cols-4 gap-3 sm:gap-4 mb-6">
+                                    <div className=" ">
+                                        <div className="text-3xl text-center sm:text-4xl font-bold text-primary-dark mb-1">
+                                            {String(timeRemaining.days).padStart(2, '0')}
+                                        </div>
+                                        <div className="text-xs text-center sm:text-sm text-primary-dark/70 uppercase tracking-wider">
+                                            Jours
+                                        </div>
+                                    </div>
+                                    <div className="">
+                                        <div className="text-3xl text-center sm:text-4xl font-bold text-primary-dark mb-1">
+                                            {String(timeRemaining.hours).padStart(2, '0')}
+                                        </div>
+                                        <div className="text-xs text-center sm:text-sm text-dark/70 uppercase tracking-wider">
+                                            Heures
+                                        </div>
+                                    </div>
+                                    <div className="">
+                                        <div className="text-3xl sm:text-4xl text-center font-bold text-primary-dark mb-1">
+                                            {String(timeRemaining.minutes).padStart(2, '0')}
+                                        </div>
+                                        <div className="text-xs sm:text-sm text-centertext-primary-dark/70 uppercase tracking-wider">
+                                            Minutes
+                                        </div>
+                                    </div>
+                                    <div className="">
+                                        <div className="text-3xl sm:text-4xl text-center font-bold text-primary-dark mb-1">
+                                            {String(timeRemaining.seconds).padStart(2, '0')}
+                                        </div>
+                                        <div className="text-xs sm:text-sm text-center text-primary-dark/70 uppercase tracking-wider">
+                                            Secondes
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
                 </div>
             </div>
         );
@@ -335,10 +470,9 @@ const MenteeContent: React.FC<{ mentor: Student | null; surprises: Surprise[]; n
     );
 };
 
-// Composant de prévisualisation de surprise
+// Composant de prévisualisation de surprise avec ReactPlayer
 const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [mediaLoading, setMediaLoading] = useState(false);
     const [mediaError, setMediaError] = useState(false);
 
     const getMediaIcon = (type: string) => {
@@ -444,43 +578,39 @@ const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => 
             case 'GIF':
                 return (
                     <div className="relative bg-neutral-100 rounded-lg overflow-hidden h-32 flex items-center justify-center">
-                        {mediaLoading && (
-                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                        )}
-                        {!mediaError && (
-                            <img
-                                src={content}
-                                alt={surprise.titre}
-                                className={`max-w-full max-h-full object-cover transition-opacity ${
-                                    mediaLoading ? 'opacity-0' : 'opacity-100'
-                                }`}
-                                onLoadStart={() => setMediaLoading(true)}
-                                onLoad={() => setMediaLoading(false)}
-                                onError={() => {
-                                    setMediaLoading(false);
-                                    setMediaError(true);
-                                }}
-                                loading="lazy"
-                            />
-                        )}
-                        {mediaError && (
+                        {mediaError ? (
                             <div className="text-center p-4">
                                 <ImageIcon className="w-8 h-8 text-neutral-400 mx-auto mb-1" />
                                 <p className="text-xs text-neutral-500">Image non disponible</p>
                             </div>
+                        ) : (
+                            <img
+                                src={content}
+                                alt={surprise.titre}
+                                className="max-w-full max-h-full object-cover"
+                                onError={() => setMediaError(true)}
+                                loading="lazy"
+                            />
                         )}
                     </div>
                 );
 
             case 'VIDEO':
                 return (
-                    <div className="relative bg-black rounded-lg overflow-hidden h-32 flex items-center justify-center">
-                        <Video className="w-8 h-8 text-white/60" />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
-                                <div className="w-0 h-0 border-l-8 border-l-white border-y-6 border-y-transparent ml-1" />
+                    <div className="relative bg-black rounded-lg overflow-hidden h-32">
+                        {mediaError ? (
+                            <div className="h-full flex items-center justify-center">
+                                <Video className="w-8 h-8 text-white/60" />
                             </div>
-                        </div>
+                        ) : (
+                            <ReactPlayer
+                                src={content}
+                                width="100%"
+                                height="100%"
+                                light
+                                onError={() => setMediaError(true)}
+                            />
+                        )}
                     </div>
                 );
 
@@ -516,9 +646,7 @@ const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => 
                 );
 
             default:
-                return (
-                    <p className="text-sm text-neutral-600 truncate">{content}</p>
-                );
+                return <p className="text-sm text-neutral-600 truncate">{content}</p>;
         }
     };
 
@@ -529,7 +657,9 @@ const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => 
                 <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-primary text-sm line-clamp-1">{surprise.titre}</h4>
                     <div className="flex items-center gap-2 mt-0.5">
-                        <div className={`${getMediaColor(surprise.type_media)} px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                        <div
+                            className={`${getMediaColor(surprise.type_media)} px-2 py-0.5 rounded-full flex items-center gap-1`}
+                        >
                             {getMediaIcon(surprise.type_media)}
                             <span className="text-xs capitalize">{surprise.type_media.toLowerCase()}</span>
                         </div>
@@ -540,9 +670,7 @@ const SurprisePreviewCard: React.FC<{ surprise: Surprise }> = ({ surprise }) => 
                     </div>
                 </div>
             </div>
-            <div className="mt-2">
-                {renderMediaPreview()}
-            </div>
+            <div className="mt-2">{renderMediaPreview()}</div>
         </div>
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactPlayer from 'react-player';
 import {
     Gift,
     FileText,
@@ -197,81 +198,43 @@ export const CreateSurprisePage: React.FC = () => {
 
             case 'VIDEO':
                 return (
-                    <div className="relative bg-black rounded-lg overflow-hidden min-h-[200px] flex items-center justify-center">
-                        {mediaLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-                                <div className="text-center">
-                                    <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-2" />
-                                    <p className="text-sm text-neutral-300">Chargement de la vidéo...</p>
+                    <div className="relative bg-black rounded-lg overflow-hidden">
+                        <div className="w-full" style={{ aspectRatio: '16/9' }}>
+                            {mediaError ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="p-8 text-center">
+                                        <Video className="w-12 h-12 text-neutral-400 mx-auto mb-2" />
+                                        <p className="text-sm text-red-400 mb-3">Impossible de charger la vidéo</p>
+                                        <a
+                                            href={content}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-primary hover:underline flex items-center justify-center gap-1"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            Ouvrir dans un nouvel onglet
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {!mediaError && (
-                            <video
-                                src={content.trim()}
-                                controls
-                                preload="metadata"
-                                className={`w-full max-h-96 transition-opacity duration-300 ${
-                                    mediaLoading ? 'opacity-0' : 'opacity-100'
-                                }`}
-                                onLoadStart={() => setMediaLoading(true)}
-                                onLoadedData={() => setMediaLoading(false)}
-                                onError={() => {
-                                    setMediaLoading(false);
-                                    setMediaError(true);
-                                }}
-                            >
-                                Votre navigateur ne supporte pas la lecture de vidéos.
-                            </video>
-                        )}
-
-                        {mediaError && (
-                            <div className="p-8 text-center">
-                                <Video className="w-12 h-12 text-neutral-400 mx-auto mb-2" />
-                                <p className="text-sm text-red-400 mb-3">Impossible de charger la vidéo</p>
-                                <a
-                                    href={content}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-primary hover:underline flex items-center justify-center gap-1"
-                                >
-                                    <ExternalLink className="w-3 h-3" />
-                                    Ouvrir dans un nouvel onglet
-                                </a>
-                            </div>
-                        )}
+                            ) : (
+                                <ReactPlayer
+                                    src={content.trim()}
+                                    controls
+                                    width="100%"
+                                    height="100%"
+                                    style={{ maxHeight: '384px' }}
+                                    onReady={() => setMediaLoading(false)}
+                                    onError={() => setMediaError(true)}
+                                />
+                            )}
+                        </div>
                     </div>
                 );
 
             case 'AUDIO':
                 return (
                     <div className="bg-neutral-50 rounded-lg p-4">
-                        {mediaLoading && (
-                            <div className="flex items-center gap-2 mb-2">
-                                <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                                <p className="text-sm text-neutral-500">Chargement de l'audio...</p>
-                            </div>
-                        )}
-
-                        {!mediaError && (
-                            <audio
-                                src={content.trim()}
-                                controls
-                                preload="metadata"
-                                className="w-full"
-                                onLoadStart={() => setMediaLoading(true)}
-                                onLoadedData={() => setMediaLoading(false)}
-                                onError={() => {
-                                    setMediaLoading(false);
-                                    setMediaError(true);
-                                }}
-                            >
-                                Votre navigateur ne supporte pas la lecture audio.
-                            </audio>
-                        )}
-
-                        {mediaError && (
+                        {mediaError ? (
                             <div className="text-center py-4">
                                 <Music className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
                                 <p className="text-sm text-red-500 mb-3">Impossible de charger l'audio</p>
@@ -285,6 +248,14 @@ export const CreateSurprisePage: React.FC = () => {
                                     Ouvrir dans un nouvel onglet
                                 </a>
                             </div>
+                        ) : (
+                            <ReactPlayer
+                                src={content.trim()}
+                                controls
+                                width="100%"
+                                height="50px"
+                                onError={() => setMediaError(true)}
+                            />
                         )}
                     </div>
                 );
@@ -380,7 +351,7 @@ export const CreateSurprisePage: React.FC = () => {
                             <Check className="w-10 h-10 text-green-600" />
                         </div>
                         <h2 className="text-2xl font-heading font-bold text-primary mb-3">
-                            Surprise créée avec succès ! 🎉
+                            Surprise créée avec succès !
                         </h2>
                         <p className="text-neutral-600 mb-6">
                             Votre surprise a été envoyée à vos mentorés
@@ -562,7 +533,7 @@ export const CreateSurprisePage: React.FC = () => {
                 {/* Prévisualisation - Colonne de droite */}
                 <div className="lg:sticky lg:top-24 lg:self-start">
                     <Card className="overflow-hidden">
-                        <CardHeader className="bg-gradient-to-r from-secondary/10 to-primary/10">
+                        <CardHeader className="">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Eye className="w-5 h-5 text-primary" />

@@ -1,6 +1,7 @@
 import React, { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import ReactPlayer from 'react-player';
 import {
     Gift,
     Plus,
@@ -198,7 +199,7 @@ export const SurprisesPage: React.FC = () => {
     );
 };
 
-// Composant carte surprise avec états de chargement
+// Composant carte surprise avec ReactPlayer
 const SurpriseCard: React.FC<{
     surprise: Surprise;
     getMediaIcon: (type: string) => JSX.Element;
@@ -299,47 +300,36 @@ const SurpriseCard: React.FC<{
 
             case 'VIDEO':
                 return (
-                    <div className="relative bg-black rounded-lg overflow-hidden min-h-[200px] flex items-center justify-center mb-3">
-                        {mediaLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
-                            </div>
-                        )}
-
-                        {!mediaError && (
-                            <video
-                                src={content}
-                                controls
-                                preload="metadata"
-                                className={`w-full max-h-96 transition-opacity duration-300 ${
-                                    mediaLoading ? 'opacity-0' : 'opacity-100'
-                                }`}
-                                onLoadStart={() => setMediaLoading(true)}
-                                onLoadedData={() => setMediaLoading(false)}
-                                onError={() => {
-                                    setMediaLoading(false);
-                                    setMediaError(true);
-                                }}
-                            >
-                                Votre navigateur ne supporte pas la lecture de vidéos.
-                            </video>
-                        )}
-
-                        {mediaError && (
-                            <div className="p-8 text-center">
-                                <Video className="w-12 h-12 text-neutral-400 mx-auto mb-2" />
-                                <p className="text-sm text-red-400 mb-3">Impossible de charger la vidéo</p>
-                                <a
-                                    href={content}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline text-sm flex items-center justify-center gap-2"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    Ouvrir dans un nouvel onglet
-                                </a>
-                            </div>
-                        )}
+                    <div className="relative bg-black rounded-lg overflow-hidden mb-3">
+                        <div className="w-full" style={{ aspectRatio: '16/9' }}>
+                            {mediaError ? (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                                    <div className="p-8 text-center">
+                                        <Video className="w-12 h-12 text-neutral-400 mx-auto mb-2" />
+                                        <p className="text-sm text-red-400 mb-3">Impossible de charger la vidéo</p>
+                                        <a
+                                            href={content}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline text-sm flex items-center justify-center gap-2"
+                                        >
+                                            <ExternalLink className="w-4 h-4" />
+                                            Ouvrir dans un nouvel onglet
+                                        </a>
+                                    </div>
+                                </div>
+                            ) : (
+                                <ReactPlayer
+                                    src={content}
+                                    controls
+                                    width="100%"
+                                    height="100%"
+                                    style={{ maxHeight: '384px' }}
+                                    onReady={() => setMediaLoading(false)}
+                                    onError={() => setMediaError(true)}
+                                />
+                            )}
+                        </div>
                     </div>
                 );
 
@@ -347,31 +337,7 @@ const SurpriseCard: React.FC<{
                 return (
                     <div className="mb-3">
                         <div className="bg-neutral-50 rounded-lg p-4">
-                            {mediaLoading && (
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                                    <p className="text-sm text-neutral-500">Chargement...</p>
-                                </div>
-                            )}
-
-                            {!mediaError && (
-                                <audio
-                                    src={content}
-                                    controls
-                                    preload="metadata"
-                                    className="w-full"
-                                    onLoadStart={() => setMediaLoading(true)}
-                                    onLoadedData={() => setMediaLoading(false)}
-                                    onError={() => {
-                                        setMediaLoading(false);
-                                        setMediaError(true);
-                                    }}
-                                >
-                                    Votre navigateur ne supporte pas la lecture audio.
-                                </audio>
-                            )}
-
-                            {mediaError && (
+                            {mediaError ? (
                                 <div className="text-center py-4">
                                     <Music className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
                                     <p className="text-sm text-neutral-500 mb-3">Impossible de charger l'audio</p>
@@ -385,6 +351,14 @@ const SurpriseCard: React.FC<{
                                         Ouvrir dans un nouvel onglet
                                     </a>
                                 </div>
+                            ) : (
+                                <ReactPlayer
+                                    src={content}
+                                    controls
+                                    width="100%"
+                                    height="50px"
+                                    onError={() => setMediaError(true)}
+                                />
                             )}
                         </div>
                     </div>
